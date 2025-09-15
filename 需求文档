@@ -1,0 +1,99 @@
+def handle_request2(ip):
+    #print('VNC查看-J1')
+    # 定义noVNC服务器的SSH连接信息
+    ssh_host = "10.10.1.7"
+    ssh_port = 22
+    ssh_username = "root"
+    ssh_password = "Mbs7377549@123"
+    
+    # 主控数据库连接信息列表
+    databases = [
+        {
+            "ip": "10.10.1.2",
+            "port": 3306,
+            "username": "rscontrol",
+            "password": "fGkeGa6B8nFYzGnB",
+            "database": "rscontrol"
+        },
+        {
+            "ip": "10.10.1.3",
+            "port": 3306,
+            "username": "rscontrol",
+            "password": "8zW64bXKeemTXrwT",
+            "database": "rscontrol"
+        }
+    ]
+    
+    for db in databases:
+        try:
+            # 连接MySQL数据库
+            mysql_connection = mysql.connector.connect(
+                host=db["ip"],
+                port=db["port"],
+                user=db["username"],
+                password=db["password"],
+                database=db["database"]
+            )
+            
+            # 执行查询操作
+            cursor = mysql_connection.cursor(dictionary=True)
+            cursor.execute("SELECT uuid, ip, mac FROM kvm WHERE ip = %s", (ip,))
+            row = cursor.fetchone()
+            if row:
+                uuid = row["uuid"]
+                vncip = row["ip"]
+                mac_address = row["mac"]
+                
+                # SSH连接并编辑文件
+                ssh_client = paramiko.SSHClient()
+                ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                ssh_client.connect(hostname=ssh_host, port=ssh_port, username=ssh_username, password=ssh_password)
+                
+                # 编辑token.conf文件
+                command = f'echo "{uuid}: {vncip}:5900" >> /root/token.conf'
+                stdin, stdout, stderr = ssh_client.exec_command(command)
+                #print("Token文件已编辑成功")
+                ssh_client.close()
+                
+                # 构建VNC URL
+                url = "http://10.10.1.7:6080/vnc_lite.html?port=6081&path=websockify/?token=xxxxxx&password=7377549"
+                #url = "http://c1vnc.ggrdp.top:61800/vnc_lite.html?port=6081&path=websockify/?token=xxxxxx&password=7377549"
+                new_url = url.replace("xxxxxx", uuid)
+                return new_url
+                
+        except mysql.connector.Error as e:
+            print(f"MySQL连接错误: {e}")
+        except paramiko.AuthenticationException:
+            print("SSH认证失败")
+        except paramiko.SSHException as e:
+            print(f"SSH连接错误: {e}")
+        finally:
+            if 'mysql_connection' in locals() and mysql_connection.is_connected():
+                cursor.close()
+                mysql_connection.close()
+    
+    return None
+
+
+
+# rstack财务数据库连接信息列表
+databases_rsbilling = [
+    {
+        "ip": "10.10.1.2",
+        "port": 3306,
+        "username": "rsbilling",
+        "password": "BTM3tDEbxHXbwZTH",
+        "database": "rsbilling"
+    }
+]
+你好 我需要你帮我写个python脚本 就是我有很多机器 我需要循环展示不同机器的vnc界面 以方便我实时监测  以下是我的具体需要：
+首先我有上面一个已经ok的函数 handle_request2  我还有个mysql数据库 databases_rsbilling
+我需要你去 databases_rsbilling数据库的 services 表中 的查询  status字段值为0的 然后把这行对应的 ssname字段值 ssip字段值拿出来 我要去你用ssip字段值 调用上面的 handle_request2 获取转换后的vnc 地址  url  然后访问这个url 展示出来 vnc界面 然后等待4秒后 继续进行下一行满足要求的  这样依次循环 如果整个表查完了 继续重新从第一行开始进行
+
+另外 我要求展示vnc界面的时候 上面居中显示 机器编号  而且左侧还得有加白名单的功能 比如 我点击了加白  这个机器编号(ssname字段值)就记录在当前文件夹下的 w.txt里面 下次循环的时候就不展示这台机器了
+另外你还得有暂停的功能  我一点击暂停 就停住了 再点击 就继续执行了 注意 暂停的时候要记住当前是查到哪行了
+
+另外 vnc画面展示的时候不要有 滚动条呀 能不想办法不显示滚动条 默认全部展示 自适应全部展示 的哪啊
+
+
+http://10.10.1.7:6080/vnc_lite.html?port=6081&path=websockify/?token=f455f827-bac3-b609-7b96-dc1748309832&password=7377549

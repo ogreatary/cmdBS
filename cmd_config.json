@@ -1,0 +1,371 @@
+{
+  "scripts": {
+    "waitress2": {
+      "name": "总控@@",
+      "command": "waitress-serve --host=0.0.0.0 --port=7089 --threads=8 app:app",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\VGPU",
+      "auto_restart": true,
+      "enabled": true,
+      "description": "总控@@"
+    },
+    "AutoCPUsortkvmo": {
+      "name": "CPU排序",
+      "command": "python AutoCPUsortkvm-3andJ1V1.2.py",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\VGPU",
+      "auto_restart": true,
+      "enabled": true,
+      "description": "CPU排序"
+    },
+    "checkcpuusage": {
+      "name": "长期高CPU放入暂时爆满区",
+      "command": "python check_cpu_usage.py",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\VGPU",
+      "auto_restart": true,
+      "enabled": true,
+      "description": "长期高CPU放入暂时爆满区"
+    },
+    "sortcpualone": {
+      "name": "高负荷cpu释放区",
+      "command": "python sortcpu-alone-6.py",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\VGPU",
+      "auto_restart": true,
+      "enabled": true,
+      "description": "高负荷cpu释放区"
+    },
+    "1": {
+      "name": "限制-黑名单",
+      "command": "python hack_userid.py",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\BS",
+      "auto_restart": true,
+      "enabled": true,
+      "description": "限制-黑名单"
+    },
+    "2": {
+      "name": "ikuai-main",
+      "command": "python mainV1.5.py",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\IkuaiDataAllS",
+      "auto_restart": true,
+      "enabled": true,
+      "description": "ikuai-main"
+    },
+    "3": {
+      "name": "卡死自动重启",
+      "command": "python RebootErrorVMV1.5.py",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\BS",
+      "auto_restart": true,
+      "enabled": true,
+      "description": "卡死自动重启"
+    },
+    "4": {
+      "name": "自动限制最新100条",
+      "command": "python autoX80hac.py",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\BS",
+      "auto_restart": true,
+      "enabled": true,
+      "description": "自动限制最新100条"
+    },
+    "5": {
+      "name": "限制系统-删除过期vm",
+      "command": "python del_vm_records.py",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\BS",
+      "auto_restart": true,
+      "enabled": true,
+      "description": "限制系统-删除过期vm"
+    },
+    "6": {
+      "name": "检测长期不用的",
+      "command": "python AbandonedVM.py",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\BS",
+      "auto_restart": true,
+      "enabled": true,
+      "description": "检测长期不用的"
+    },
+    "cleanup_scheduler": {
+      "name": "限制-数据库定期删除",
+      "command": "python db_cleanup_scheduler.py",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\BS",
+      "auto_restart": true,
+      "enabled": true,
+      "description": "限制-数据库定期删除"
+    },
+    "xianzhiapp": {
+      "name": "限制系统-Web服务",
+      "command": "python app.py",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\BS",
+      "auto_restart": true,
+      "enabled": true,
+      "description": "限制系统-Web服务"
+    },
+    "WriteData": {
+      "name": "限制系统vm数据写入",
+      "command": "python WriteData-3.py",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\BS",
+      "auto_restart": true,
+      "enabled": true,
+      "description": "限制系统vm数据写入数据库"
+    },
+    "vmlimit": {
+      "name": "限制-vm定期循环限制",
+      "command": "python vm_limit_enforcer-4.py",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\BS",
+      "auto_restart": true,
+      "enabled": true,
+      "description": "限制-vm定期循环限制"
+    },
+    "trafficcontrol": {
+      "name": "ikuai路由器负载分流调控",
+      "command": "python traffic_controlV1.15.py",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\IkuaiDataAllS",
+      "auto_restart": true,
+      "enabled": true,
+      "description": "ikuai路由器负载分流调控"
+    },
+    "aibot": {
+      "name": "AI智能客服",
+      "command": "python server.py",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\AIbot",
+      "auto_restart": true,
+      "enabled": true,
+      "description": "AI智能客服服务端"
+    },
+    "area4hAI": {
+      "name": "4H智能加到显卡区",
+      "command": "python area_4hAI.py",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\VGPU",
+      "auto_restart": true,
+      "enabled": true,
+      "description": "4H智能加到显卡区"
+    },
+    "mainikuai": {
+      "name": "ikuai上行统计Main",
+      "command": "python main.py",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\IkuaiDataAll-2",
+      "auto_restart": true,
+      "enabled": true,
+      "description": "ikuai每日上行统计"
+    },
+    "webmonitor": {
+      "name": "ikuai上行统计web服务",
+      "command": "python web_monitor.py",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\IkuaiDataAll-2",
+      "auto_restart": true,
+      "enabled": true,
+      "description": "ikuai上行统计web服务"
+    },
+    "rsyouxiang": {
+      "name": "财务手机号邮箱自动验证",
+      "command": "python rs财务手机号邮箱自动验证.py",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\VGPU",
+      "auto_restart": true,
+      "enabled": true,
+      "description": "财务手机号邮箱自动验证"
+    },
+    "ikuaic1": {
+      "name": "ikuai端口清理-C1",
+      "command": "python ikuai定期清理-C1V1.py",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\ikuai定期清理\\ikuai定期清理-C1",
+      "auto_restart": true,
+      "enabled": true,
+      "description": "ikuai端口清理-C1"
+    },
+    "ikuaiuer": {
+      "name": "ikuai端口清理-J1",
+      "command": "python ikuai定期清理-J1V1.py",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\ikuai定期清理\\ikuai定期清理-J1",
+      "auto_restart": true,
+      "enabled": true,
+      "description": "ikuai端口清理-J1"
+    },
+    "checkdelvm": {
+      "name": "已到期未删除的的自动删除",
+      "command": "python checkdelvm-3.py",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\VGPU",
+      "auto_restart": true,
+      "enabled": true,
+      "description": "已到期未删除的的自动删除"
+    },
+    "backupscript": {
+      "name": "rstack财务数据库备份",
+      "command": "python backup_scriptV1.2.py",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\主控财务备份",
+      "auto_restart": true,
+      "enabled": true,
+      "description": "rstack财务数据库备份"
+    },
+    "qemucheck": {
+      "name": "qemu版本检查与NTP时间自动纠正",
+      "command": "python qemu-check.py",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\VGPU",
+      "auto_restart": true,
+      "enabled": true,
+      "description": "qemu版本检查与NTP时间自动纠正"
+    },
+    "cpusort6": {
+      "name": "新增机器加入及释放锁定区",
+      "command": "python cpusort6.py",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\VGPU",
+      "auto_restart": true,
+      "enabled": true,
+      "description": "新增机器加入及释放锁定区"
+    },
+    "rsbillinghack": {
+      "name": "财务定期破解",
+      "command": "python rsbilling_hack.py",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\VGPU",
+      "auto_restart": true,
+      "enabled": true,
+      "description": "财务定期破解"
+    },
+    "ikuaibackup": {
+      "name": "ikuai配置自动备份",
+      "command": "python ikuai_backupV1.5.py",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\ikuai自动备份",
+      "auto_restart": true,
+      "enabled": true,
+      "description": "ikuai配置自动备份"
+    },
+    "powershell22": {
+      "name": "风扇自动排序",
+      "command": "powershell -NoExit -Command \"cd C:\\Users\\Administrator\\Desktop\\VGPU; .\\fanspeedkvm-xiaohui.ps1",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\VGPU",
+      "auto_restart": true,
+      "enabled": true,
+      "description": "风扇自动排序"
+    },
+    "Aotocpusortmfcw": {
+      "name": "魔法财务CPU排序",
+      "command": "python Aotocpusort-mfcw.py",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\VGPU",
+      "auto_restart": true,
+      "enabled": true,
+      "description": "魔法财务CPU排序"
+    },
+    "kvmsetpasswd": {
+      "name": "kvm重置密码-1",
+      "command": "python kvmsetpasswd.py",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\VGPU",
+      "auto_restart": true,
+      "enabled": true,
+      "description": "kvm重置密码-1"
+    },
+    "kvmsetpasswd2": {
+      "name": "kvm重置密码-2",
+      "command": "python kvmsetpasswd.py",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\VGPU",
+      "auto_restart": true,
+      "enabled": true,
+      "description": "kvm重置密码-2"
+    },
+    "autokvmupdate": {
+      "name": "KVM升级监测",
+      "command": "python autokvmupdate.py",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\VGPU",
+      "auto_restart": true,
+      "enabled": true,
+      "description": "KVM升级监测"
+    },
+    "reloados": {
+      "name": "reloados监测",
+      "command": "python reloados.py",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\VGPU",
+      "auto_restart": true,
+      "enabled": true,
+      "description": "reloados监测"
+    }
+  },
+  "groups": {
+    "1": {
+      "name": "ikuai路由网络",
+      "description": "ikuai路由网络",
+      "created_at": "2025-06-29T12:30:18.535920"
+    },
+    "2": {
+      "name": "限制系统汇总",
+      "description": "限制系统汇总",
+      "created_at": "2025-06-29T18:51:34.484999"
+    },
+    "vgpu": {
+      "name": "vgpu",
+      "description": "vgpu",
+      "created_at": "2025-07-06T17:06:36.724286"
+    }
+  },
+  "script_groups": {
+    "1": "2",
+    "3": "2",
+    "4": "2",
+    "5": "2",
+    "6": "2",
+    "cleanup_scheduler": "2",
+    "xianzhiapp": "2",
+    "2": "1",
+    "WriteData": "2",
+    "vmlimit": "2",
+    "trafficcontrol": "1",
+    "area4hAI": "vgpu",
+    "webmonitor": "1",
+    "mainikuai": "1",
+    "vpnmonitor": "1",
+    "ikuaic1": "1",
+    "ikuaiuer": "1",
+    "checkdelvm": "vgpu",
+    "checkcpuusage": "vgpu",
+    "cpusort6": "vgpu",
+    "sortcpualone": "vgpu",
+    "ikuaibackup": "1",
+    "autokvmupdate": "vgpu",
+    "waitress2": "vgpu",
+    "AutoCPUsortkvmo": "vgpu",
+    "reloados": "vgpu",
+    "kvmsetpasswd2": "vgpu",
+    "powershell22": "vgpu",
+    "Aotocpusortmfcw": "vgpu",
+    "kvmsetpasswd": "vgpu"
+  },
+  "script_order": {
+    "1": [
+      "2",
+      "trafficcontrol",
+      "vpnmonitor",
+      "webmonitor",
+      "mainikuai",
+      "ikuaic1",
+      "ikuaiuer",
+      "ikuaibackup"
+    ],
+    "2": [
+      "xianzhiapp",
+      "1",
+      "WriteData",
+      "vmlimit",
+      "3",
+      "4",
+      "5",
+      "6",
+      "cleanup_scheduler",
+      "vpnmonitor"
+    ],
+    "ungrouped": [
+      "aibot",
+      "qemucheck",
+      "rsyouxiang",
+      "backupscript",
+      "rsbillinghack"
+    ],
+    "vgpu": [
+      "waitress2",
+      "AutoCPUsortkvmo",
+      "reloados",
+      "powershell22",
+      "Aotocpusortmfcw",
+      "kvmsetpasswd",
+      "kvmsetpasswd2",
+      "area4hAI",
+      "checkdelvm",
+      "checkcpuusage",
+      "cpusort6",
+      "sortcpualone",
+      "autokvmupdate"
+    ]
+  }
+}
