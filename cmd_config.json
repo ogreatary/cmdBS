@@ -45,7 +45,7 @@
       "command": "python mainV1.5.py",
       "working_dir": "C:\\Users\\Administrator\\Desktop\\IkuaiDataAllS",
       "auto_restart": true,
-      "enabled": true,
+      "enabled": false,
       "description": "ikuai-main"
     },
     "3": {
@@ -224,14 +224,6 @@
       "enabled": true,
       "description": "ikuai配置自动备份"
     },
-    "powershell22": {
-      "name": "风扇自动排序",
-      "command": "powershell -NoExit -Command \"cd C:\\Users\\Administrator\\Desktop\\VGPU; .\\fanspeedkvm-xiaohui.ps1",
-      "working_dir": "C:\\Users\\Administrator\\Desktop\\VGPU",
-      "auto_restart": true,
-      "enabled": true,
-      "description": "风扇自动排序"
-    },
     "Aotocpusortmfcw": {
       "name": "魔法财务CPU排序",
       "command": "python Aotocpusort-mfcw.py",
@@ -271,6 +263,14 @@
       "auto_restart": true,
       "enabled": true,
       "description": "reloados监测"
+    },
+    "fan2auto": {
+      "name": "风扇自动排序",
+      "command": "python kvm风扇调整.py",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\VGPU",
+      "auto_restart": true,
+      "enabled": true,
+      "description": "风扇自动排序"
     }
   },
   "groups": {
