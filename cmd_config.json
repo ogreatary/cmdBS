@@ -40,14 +40,6 @@
       "enabled": true,
       "description": "限制-黑名单"
     },
-    "2": {
-      "name": "ikuai-main",
-      "command": "python mainV1.5.py",
-      "working_dir": "C:\\Users\\Administrator\\Desktop\\IkuaiDataAllS",
-      "auto_restart": true,
-      "enabled": false,
-      "description": "ikuai-main"
-    },
     "3": {
       "name": "卡死自动重启",
       "command": "python RebootErrorVMV1.5.py",
@@ -71,14 +63,6 @@
       "auto_restart": true,
       "enabled": true,
       "description": "限制系统-删除过期vm"
-    },
-    "6": {
-      "name": "检测长期不用的",
-      "command": "python AbandonedVM.py",
-      "working_dir": "C:\\Users\\Administrator\\Desktop\\BS",
-      "auto_restart": true,
-      "enabled": true,
-      "description": "检测长期不用的"
     },
     "cleanup_scheduler": {
       "name": "限制-数据库定期删除",
@@ -111,14 +95,6 @@
       "auto_restart": true,
       "enabled": true,
       "description": "限制-vm定期循环限制"
-    },
-    "trafficcontrol": {
-      "name": "ikuai路由器负载分流调控",
-      "command": "python traffic_controlV1.15.py",
-      "working_dir": "C:\\Users\\Administrator\\Desktop\\IkuaiDataAllS",
-      "auto_restart": true,
-      "enabled": true,
-      "description": "ikuai路由器负载分流调控"
     },
     "aibot": {
       "name": "AI智能客服",
@@ -160,22 +136,6 @@
       "enabled": true,
       "description": "财务手机号邮箱自动验证"
     },
-    "ikuaic1": {
-      "name": "ikuai端口清理-C1",
-      "command": "python ikuai定期清理-C1V1.py",
-      "working_dir": "C:\\Users\\Administrator\\Desktop\\ikuai定期清理\\ikuai定期清理-C1",
-      "auto_restart": true,
-      "enabled": true,
-      "description": "ikuai端口清理-C1"
-    },
-    "ikuaiuer": {
-      "name": "ikuai端口清理-J1",
-      "command": "python ikuai定期清理-J1V1.py",
-      "working_dir": "C:\\Users\\Administrator\\Desktop\\ikuai定期清理\\ikuai定期清理-J1",
-      "auto_restart": true,
-      "enabled": true,
-      "description": "ikuai端口清理-J1"
-    },
     "checkdelvm": {
       "name": "已到期未删除的的自动删除",
       "command": "python checkdelvm-3.py",
@@ -183,6 +143,14 @@
       "auto_restart": true,
       "enabled": true,
       "description": "已到期未删除的的自动删除"
+    },
+    "Aotocpusortmfcw": {
+      "name": "魔法财务CPU排序",
+      "command": "python Aotocpusort-mfcw.py",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\VGPU",
+      "auto_restart": true,
+      "enabled": true,
+      "description": "魔法财务CPU排序"
     },
     "backupscript": {
       "name": "rstack财务数据库备份",
@@ -224,14 +192,6 @@
       "enabled": true,
       "description": "ikuai配置自动备份"
     },
-    "Aotocpusortmfcw": {
-      "name": "魔法财务CPU排序",
-      "command": "python Aotocpusort-mfcw.py",
-      "working_dir": "C:\\Users\\Administrator\\Desktop\\VGPU",
-      "auto_restart": true,
-      "enabled": true,
-      "description": "魔法财务CPU排序"
-    },
     "kvmsetpasswd": {
       "name": "kvm重置密码-1",
       "command": "python kvmsetpasswd.py",
@@ -271,6 +231,86 @@
       "auto_restart": true,
       "enabled": true,
       "description": "风扇自动排序"
+    },
+    "ikuaiclen1": {
+      "name": "ikuai定期清理-J1V2每小时执行一次",
+      "command": "python ikuai定期清理-J1V2每小时执行一次.py",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\NetworkSwitch",
+      "auto_restart": true,
+      "enabled": true,
+      "description": "ikuai定期清理-J1V2每小时执行一次"
+    },
+    "ikuaifuzai": {
+      "name": "ikuai负载智能调整",
+      "command": "python traffic_controlV1.15.py",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\ikuaiFlow Management",
+      "auto_restart": true,
+      "enabled": true,
+      "description": ""
+    },
+    "mainV15": {
+      "name": "ikuai-mainV1.5.py自动重启bat脚本",
+      "command": "auto_restart.bat",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\ikuaiFlow Management",
+      "auto_restart": true,
+      "enabled": true,
+      "description": ""
+    },
+    "NetworkSwitch": {
+      "name": "NetworkSwitch自动重启批处理",
+      "command": "auto_restart_web.bat",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\NetworkSwitch",
+      "auto_restart": true,
+      "enabled": true,
+      "description": ""
+    },
+    "webmonitor2": {
+      "name": "上行流量最新监测web服务",
+      "command": "python web_monitor.py",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\ikuaiFlow Management",
+      "auto_restart": true,
+      "enabled": true,
+      "description": ""
+    },
+    "ip_sync_manager": {
+      "name": "远程高上行流量txt文档复制",
+      "command": "python ip_sync_manager.py",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\ikuaiFlow Management",
+      "auto_restart": true,
+      "enabled": true,
+      "description": "远程高上行流量复制"
+    },
+    "getvncurl": {
+      "name": "getvncurl2",
+      "command": "python get_vnc_url.py",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\VGPU",
+      "auto_restart": true,
+      "enabled": true,
+      "description": "getvnc-给xiaohui那边"
+    },
+    "license2": {
+      "name": "license2",
+      "command": "python app.py",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\AuthorizationServer",
+      "auto_restart": true,
+      "enabled": true,
+      "description": "授权服务器(rsckcloud)"
+    },
+    "net": {
+      "name": "ip切换动态更新爆满线路",
+      "command": "python fetch_router_stats.py",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\NetworkSwitch",
+      "auto_restart": true,
+      "enabled": true,
+      "description": "ip切换动态更新爆满线路"
+    },
+    "ikuaidatas": {
+      "name": "日志留存3个月",
+      "command": "auto_restart_download_lan_devices.bat",
+      "working_dir": "C:\\Users\\Administrator\\Desktop\\ikuaiFlow Management",
+      "auto_restart": true,
+      "enabled": true,
+      "description": "日志留存3个月"
     }
   },
   "groups": {
@@ -350,7 +390,17 @@
       "qemucheck",
       "rsyouxiang",
       "backupscript",
-      "rsbillinghack"
+      "rsbillinghack",
+      "fan2auto",
+      "ikuaiclen1",
+      "ikuaifuzai",
+      "mainV15",
+      "NetworkSwitch",
+      "webmonitor2",
+      "ip_sync_manager",
+      "getvncurl",
+      "license2",
+      "net"
     ],
     "vgpu": [
       "waitress2",

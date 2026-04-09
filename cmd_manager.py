@@ -509,6 +509,7 @@ class ScriptManager:
                     info['cpu_percent'] = 0
                     info['memory_mb'] = 0
         
+        info['stop_reason'] = self.stop_reasons.get(script_id)
         return info
         
     def add_log(self, script_id, message):
@@ -759,6 +760,41 @@ def api_scripts():
     
     return jsonify(scripts_info)
 
+@app.route('/dawson/api/scripts/status')
+def api_scripts_status():
+    """轻量级状态接口 - 不调用psutil，只返回状态信息"""
+    result = {}
+    for script_id, config in script_manager.scripts.items():
+        status = script_manager.get_script_status(script_id)
+        info = {
+            'status': status,
+            'enabled': config.get('enabled', True),
+            'stop_reason': script_manager.stop_reasons.get(script_id),
+            'auto_restart': config.get('auto_restart', False),
+            'name': config.get('name', script_id)
+        }
+        if status == 'running' and script_id in script_manager.processes:
+            info['pid'] = script_manager.processes[script_id]['process'].pid
+        result[script_id] = info
+    return jsonify(result)
+
+@app.route('/dawson/api/scripts/batch-logs')
+def api_batch_logs():
+    """批量获取脚本日志 - 1个请求替代N个"""
+    lines = request.args.get('lines', 20, type=int)
+    ids_param = request.args.get('ids', '')
+    if ids_param:
+        script_ids = [sid.strip() for sid in ids_param.split(',') if sid.strip()]
+    else:
+        script_ids = list(script_manager.scripts.keys())
+    result = {}
+    for script_id in script_ids:
+        if script_id in script_manager.scripts:
+            logs = script_manager.get_logs(script_id, lines)
+            if logs:
+                result[script_id] = logs
+    return jsonify(result)
+
 @app.route('/dawson/api/scripts/<script_id>')
 def api_script_info(script_id):
     """获取单个脚本信息"""
@@ -848,7 +884,7 @@ def api_delete_script(script_id):
 def api_system_info():
     """获取系统信息"""
     try:
-        cpu_percent = psutil.cpu_percent(interval=1)
+        cpu_percent = psutil.cpu_percent(interval=0)
         memory = psutil.virtual_memory()
         disk = psutil.disk_usage('/')
         

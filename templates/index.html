@@ -1405,7 +1405,7 @@
     </div>
 
     <!-- 刷新按钮 -->
-    <button class="refresh-btn" onclick="loadScripts()" title="刷新">
+    <button class="refresh-btn" onclick="loadScriptsAndGroups()" title="刷新">
         <i class="bi bi-arrow-clockwise"></i>
     </button>
 
@@ -1642,17 +1642,14 @@
             
             loadScriptsAndGroups();
             
-            // 每30秒自动刷新脚本列表
+            // 每30秒全量刷新（同步完整数据）
             setInterval(loadScriptsAndGroups, 30000);
             
-            // 每5秒更新CMD输出
-            setInterval(updateAllCmdOutputs, 5000);
+            // 每5秒批量更新CMD输出（1个请求替代N个）
+            setInterval(updateAllCmdOutputsBatch, 5000);
             
-            // 每5秒检查脚本状态变化（用于检测异常退出）
-            setInterval(checkScriptStatusChanges, 2000);
-            
-            // 每10秒检查异常中断状态并自动重启
-            setInterval(checkCrashStatusAndAutoRestart, 10000);
+            // 每3秒轻量级状态检查（1个请求替代N+1个）
+            setInterval(checkStatusLightweight, 3000);
         });
 
         // 加载脚本和分组数据
@@ -1702,9 +1699,9 @@
                 updateStats(scripts);
                 updateLastUpdateTime();
                 
-                // 延迟更新CMD输出
+                // 延迟批量更新CMD输出
                 setTimeout(() => {
-                    updateAllCmdOutputs();
+                    updateAllCmdOutputsBatch();
                 }, 500);
                 
             } catch (error) {
@@ -1714,67 +1711,34 @@
         }
 
         // 加载脚本列表（保留兼容性）
-        async function loadScripts() {
-            try {
-                // 获取所有脚本
-                const apiUrl = '/dawson/api/scripts';
-                const response = await fetch(apiUrl);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                
-                const data = await response.json();
-                
-                // 检查数据格式并转换为数组
-                let scripts;
-                if (Array.isArray(data)) {
-                    scripts = data;
-                } else if (typeof data === 'object' && data !== null) {
-                    // 如果是对象，转换为数组
-                    scripts = Object.keys(data).map(id => ({
-                        id: id,
-                        ...data[id]
-                    }));
-                } else {
-                    throw new Error('API返回的数据格式不正确');
-                }
-                
-                renderScripts(scripts);
-                updateStats(scripts);
-                updateLastUpdateTime();
-                
-                // 延迟一下再更新CMD输出，确保DOM已渲染
-                setTimeout(() => {
-                    updateAllCmdOutputs();
-                }, 500);
-            } catch (error) {
-                console.error('加载脚本失败:', error);
-                
-                // 在页面上显示详细错误信息
-                const container = document.getElementById('scripts-container');
-                container.innerHTML = `
-                    <div class="alert alert-danger alert-custom" role="alert">
-                        <h4 class="alert-heading"><i class="bi bi-exclamation-triangle"></i> 加载脚本列表失败</h4>
-                        <p><strong>错误详情:</strong> ${error.message}</p>
-                        <hr>
-                        <p class="mb-0">
-                            <strong>可能的原因:</strong><br>
-                            • 服务器连接失败 (检查服务是否正在运行)<br>
-                            • 配置文件读取错误 (检查 cmd_config.json 格式)<br>
-                            • 网络连接问题<br>
-                            • 服务器内部错误
-                        </p>
-                        <div class="mt-3">
-                            <button class="btn btn-outline-danger" onclick="loadScripts()">
-                                <i class="bi bi-arrow-clockwise"></i> 重试
-                            </button>
-                        </div>
+        // 加载失败时显示错误信息
+        function showErrorContainer(errorMessage) {
+            const container = document.getElementById('scripts-container');
+            container.innerHTML = `
+                <div class="alert alert-danger alert-custom" role="alert">
+                    <h4 class="alert-heading"><i class="bi bi-exclamation-triangle"></i> 加载脚本列表失败</h4>
+                    <p><strong>错误详情:</strong> ${errorMessage}</p>
+                    <hr>
+                    <p class="mb-0">
+                        <strong>可能的原因:</strong><br>
+                        • 服务器连接失败 (检查服务是否正在运行)<br>
+                        • 配置文件读取错误 (检查 cmd_config.json 格式)<br>
+                        • 网络连接问题<br>
+                        • 服务器内部错误
+                    </p>
+                    <div class="mt-3">
+                        <button class="btn btn-outline-danger" onclick="loadScriptsAndGroups()">
+                            <i class="bi bi-arrow-clockwise"></i> 重试
+                        </button>
                     </div>
-                `;
-                
-                showToast(`加载失败: ${error.message}`, 'error');
-            }
+                </div>
+            `;
+            showToast(`加载失败: ${errorMessage}`, 'error');
+        }
+
+        // 兼容旧调用，统一委托给 loadScriptsAndGroups
+        async function loadScripts() {
+            return loadScriptsAndGroups();
         }
 
         // 渲染脚本列表
@@ -1801,15 +1765,14 @@
                 </div>
             `;
             
-            // 渲染完成后，检查并恢复每个脚本的停止原因显示
+            // 渲染完成后，用已有数据直接更新停止原因显示（无需额外API请求）
             setTimeout(() => {
                 scripts.forEach(script => {
-                    if (script.status === 'stopped') {
-                        checkStopReasonAndHandle(script);
+                    if (script.status === 'stopped' && script.stop_reason) {
+                        updateStopReasonDisplay(script.id, script.stop_reason);
                     }
                 });
                 
-                // 更新拖拽属性
                 updateDragAttributes();
             }, 100);
         }
@@ -1986,13 +1949,133 @@
             }
         }
 
-        // 更新所有运行中脚本的CMD输出
-        function updateAllCmdOutputs() {
-            const runningContainers = document.querySelectorAll('[id^="cmd-output-"]');
-            runningContainers.forEach(container => {
-                const scriptId = container.id.replace('cmd-output-', '');
-                updateCmdOutput(scriptId);
-            });
+        // 批量更新所有CMD输出（1个请求替代N个）
+        async function updateAllCmdOutputsBatch() {
+            try {
+                const containers = document.querySelectorAll('[id^="cmd-output-"]');
+                if (containers.length === 0) return;
+                
+                const scriptIds = Array.from(containers).map(c => c.id.replace('cmd-output-', ''));
+                const response = await fetch(`/dawson/api/scripts/batch-logs?lines=20&ids=${scriptIds.join(',')}`);
+                if (!response.ok) return;
+                const allLogs = await response.json();
+                
+                for (const [scriptId, logs] of Object.entries(allLogs)) {
+                    const contentElement = document.getElementById(`cmd-content-${scriptId}`);
+                    if (contentElement && logs && logs.length > 0) {
+                        const wasAtBottom = contentElement.scrollTop + contentElement.clientHeight >= contentElement.scrollHeight - 5;
+                        contentElement.innerHTML = logs.map(line => 
+                            `<div class="cmd-line">${escapeHtml(line)}</div>`
+                        ).join('');
+                        if (wasAtBottom) {
+                            contentElement.scrollTop = contentElement.scrollHeight;
+                        }
+                    } else if (contentElement) {
+                        contentElement.innerHTML = '<div class="loading-output">暂无输出内容</div>';
+                    }
+                }
+            } catch (error) {
+                console.debug('批量更新CMD输出失败:', error);
+            }
+        }
+
+        // 轻量级状态检查（1个请求替代原来的N+1个）
+        async function checkStatusLightweight() {
+            try {
+                const response = await fetch('/dawson/api/scripts/status');
+                if (!response.ok) return;
+                const statusData = await response.json();
+                
+                let runningCount = 0, stoppedCount = 0, totalCount = 0, autoRestartCount = 0;
+                
+                for (const [scriptId, info] of Object.entries(statusData)) {
+                    totalCount++;
+                    if (info.status === 'running') runningCount++;
+                    else stoppedCount++;
+                    if (info.auto_restart) autoRestartCount++;
+                    
+                    const card = document.querySelector(`[data-script-id="${scriptId}"]`);
+                    if (!card) continue;
+                    
+                    const pseudoScript = {
+                        id: scriptId, status: info.status, enabled: info.enabled,
+                        stop_reason: info.stop_reason, auto_restart: info.auto_restart, name: info.name
+                    };
+                    
+                    // 更新状态徽章
+                    const statusBadge = card.querySelector('.status-badge');
+                    if (statusBadge) {
+                        const statusText = getStatusText(pseudoScript);
+                        if (statusText) {
+                            let className = `status-badge status-${getStatusClass(pseudoScript)}`;
+                            if (info.status === 'stopped' && info.stop_reason === 'crash') {
+                                className += ' flash-red';
+                            }
+                            statusBadge.className = className;
+                            statusBadge.innerHTML = `<i class="bi bi-${getStatusIcon(pseudoScript)}"></i> ${statusText}`;
+                            statusBadge.style.display = 'inline-block';
+                        } else {
+                            statusBadge.style.display = 'none';
+                        }
+                    }
+                    
+                    // 更新启动/停止按钮
+                    const actionsDiv = card.querySelector('.script-actions');
+                    if (actionsDiv) {
+                        const startStopButton = actionsDiv.querySelector('.btn-start, .btn-stop');
+                        if (startStopButton) {
+                            if (info.status === 'running') {
+                                startStopButton.className = 'btn btn-stop btn-custom';
+                                startStopButton.innerHTML = '<i class="bi bi-stop-fill"></i> 停止';
+                                startStopButton.setAttribute('onclick', `stopScript('${scriptId}')`);
+                            } else {
+                                startStopButton.className = 'btn btn-start btn-custom';
+                                startStopButton.innerHTML = '<i class="bi bi-play-fill"></i> 启动';
+                                startStopButton.setAttribute('onclick', `startScript('${scriptId}')`);
+                            }
+                        }
+                    }
+                    
+                    // 更新停止原因显示
+                    if (info.status === 'running') {
+                        updateStopReasonDisplay(scriptId, null);
+                        card.classList.remove('crash-status');
+                    } else if (info.stop_reason) {
+                        updateStopReasonDisplay(scriptId, info.stop_reason);
+                    }
+                    
+                    // 处理CMD输出容器
+                    const existingCmdOutput = card.querySelector(`#cmd-output-${scriptId}`);
+                    if (info.status === 'running' && !existingCmdOutput) {
+                        const cmdOutputHtml = `
+                            <div class="cmd-output-container" id="cmd-output-${scriptId}">
+                                <div class="cmd-output-header">
+                                    <span class="cmd-output-title"><i class="bi bi-terminal"></i> 实时输出</span>
+                                    <button class="btn btn-sm btn-outline-light" onclick="toggleCmdOutput('${scriptId}')" id="toggle-cmd-${scriptId}">
+                                        <i class="bi bi-chevron-up"></i>
+                                    </button>
+                                </div>
+                                <div class="cmd-output-content" id="cmd-content-${scriptId}">
+                                    <div class="loading-output">正在加载输出...</div>
+                                </div>
+                            </div>
+                        `;
+                        if (actionsDiv) {
+                            actionsDiv.insertAdjacentHTML('beforebegin', cmdOutputHtml);
+                        }
+                    } else if (info.status !== 'running' && existingCmdOutput && info.stop_reason === 'manual') {
+                        existingCmdOutput.remove();
+                    }
+                }
+                
+                // 更新统计信息
+                document.getElementById('total-scripts').textContent = totalCount;
+                document.getElementById('running-scripts').textContent = runningCount;
+                document.getElementById('stopped-scripts').textContent = stoppedCount;
+                document.getElementById('auto-restart-scripts').textContent = autoRestartCount;
+            } catch (error) {
+                console.debug('轻量级状态检查失败:', error);
+            }
         }
 
         // 获取脚本名称
@@ -2103,7 +2186,10 @@
                 
                 if (result.success) {
                     showToast(`脚本 "${scriptName}" 已删除`, 'success');
-                    loadScripts();
+                    const card = document.querySelector(`[data-script-id="${scriptId}"]`);
+                    if (card) card.remove();
+                    scripts = scripts.filter(s => s.id !== scriptId);
+                    updateStats(scripts);
                 } else {
                     showToast(`删除脚本 "${scriptName}" 失败: ${result.message}`, 'error');
                 }
@@ -2296,152 +2382,7 @@
             }
         }
 
-        // 检查所有脚本状态变化（用于检测异常退出等情况）
-        async function checkScriptStatusChanges() {
-            try {
-                const response = await fetch('/dawson/api/scripts');
-                if (!response.ok) {
-                    return; // 静默失败，避免干扰用户
-                }
-                
-                const data = await response.json();
-                let scripts;
-                if (Array.isArray(data)) {
-                    scripts = data;
-                } else if (typeof data === 'object' && data !== null) {
-                    scripts = Object.keys(data).map(id => ({
-                        id: id,
-                        ...data[id]
-                    }));
-                } else {
-                    return;
-                }
-                
-                // 检查每个脚本的状态变化
-                scripts.forEach(script => {
-                    const existingCmdOutput = document.querySelector(`#cmd-output-${script.id}`);
-                    const shouldHaveCmdOutput = script.status === 'running';
-                    
-                    // 始终更新脚本状态显示
-                    updateSingleScriptStatus(script.id);
-                    
-                    if (shouldHaveCmdOutput && !existingCmdOutput) {
-                        // 脚本正在运行但没有CMD输出容器，需要创建
-                        console.log(`检测到脚本 ${script.id} 需要创建CMD输出容器`);
-                    } else if (!shouldHaveCmdOutput && existingCmdOutput) {
-                        // 脚本已停止，需要查询停止原因来决定是否删除CMD窗口
-                        console.log(`检测到脚本 ${script.id} 已停止且存在CMD窗口，查询停止原因...`);
-                        checkStopReasonAndHandle(script);
-                    }
-                });
-                
-                // 更新统计信息
-                updateStats(scripts);
-            } catch (error) {
-                // 静默失败，避免干扰用户
-                console.debug('检查脚本状态变化失败:', error);
-            }
-        }
-        
-        // 检查停止原因并处理CMD窗口
-        async function checkStopReasonAndHandle(script) {
-            try {
-                console.log(`开始查询脚本 ${script.id} 的停止原因...`);
-                const response = await fetch(`/dawson/api/scripts/${script.id}/stop-reason`);
-                
-                if (!response.ok) {
-                    console.error(`查询停止原因API失败: ${response.status} ${response.statusText}`);
-                    return;
-                }
-                
-                const result = await response.json();
-                const stopReason = result.stop_reason;
-                
-                console.log(`脚本 ${script.id} 停止原因查询结果:`, result);
-                console.log(`脚本 ${script.id} 停止原因: ${stopReason}`);
-                
-                // 更新停止原因显示
-                updateStopReasonDisplay(script.id, stopReason);
-                
-                const existingCmdOutput = document.querySelector(`#cmd-output-${script.id}`);
-                console.log(`脚本 ${script.id} CMD窗口存在状态:`, !!existingCmdOutput);
-                
-                if (stopReason === 'manual' && existingCmdOutput) {
-                    // 手动停止，删除CMD窗口
-                    existingCmdOutput.remove();
-                    console.log(`✅ 手动停止脚本 ${script.id}，删除CMD输出容器`);
-                } else if (stopReason === 'crash') {
-                    // 异常退出，保留CMD窗口，自动重启
-                    console.log(`🔥 脚本 ${script.id} 异常退出，保留CMD输出容器`);
-                    
-                    if (script.auto_restart && script.enabled && script.status === 'stopped') {
-                        console.log(`🔄 检测到脚本 ${script.id} 异常退出，准备自动重启`);
-                        setTimeout(() => {
-                            console.log(`🚀 自动重启脚本 ${script.id}`);
-                            startScript(script.id);
-                        }, 3000); // 延迟3秒重启，避免频繁重启
-                    }
-                } else {
-                    // 未知原因，保留CMD窗口
-                    console.log(`❓ 脚本 ${script.id} 停止原因未知(${stopReason})，保留CMD输出容器`);
-                }
-            } catch (error) {
-                console.error(`❌ 查询脚本 ${script.id} 停止原因失败:`, error);
-                // 查询失败时保留CMD窗口
-                console.log(`🛡️ 查询失败，保留脚本 ${script.id} 的CMD窗口`);
-            }
-        }
-        
-        // 检查异常中断状态并自动重启
-        async function checkCrashStatusAndAutoRestart() {
-            try {
-                const response = await fetch('/dawson/api/scripts');
-                if (!response.ok) {
-                    return; // 静默失败
-                }
-                
-                const data = await response.json();
-                let scripts;
-                if (Array.isArray(data)) {
-                    scripts = data;
-                } else if (typeof data === 'object' && data !== null) {
-                    scripts = Object.keys(data).map(id => ({
-                        id: id,
-                        ...data[id]
-                    }));
-                } else {
-                    return;
-                }
-                
-                // 检查每个已停止的脚本
-                for (const script of scripts) {
-                    if (script.status === 'stopped' && script.enabled && script.auto_restart) {
-                        // 检查停止原因
-                        try {
-                            const reasonResponse = await fetch(`/dawson/api/scripts/${script.id}/stop-reason`);
-                            if (reasonResponse.ok) {
-                                const reasonResult = await reasonResponse.json();
-                                if (reasonResult.stop_reason === 'crash') {
-                                    // 立即显示异常中断状态
-                                    updateScriptStatusImmediately(script.id, 'stopped', 'crash');
-                                    
-                                    // 自动重启
-                                    console.log(`🔄 检测到脚本 ${script.id} 异常中断，执行自动重启`);
-                                    await startScript(script.id);
-                                    
-                                    // 显示通知
-                                    showToast(`脚本 ${script.name} 异常中断，已自动重启`, 'warning');
-                                }
-                            }
-                        } catch (error) {
-                            console.debug(`检查脚本 ${script.id} 停止原因失败:`, error);
-                        }
-                    }
-                }
-            } catch (error) {
-                console.debug('检查异常中断状态失败:', error);
-            }
-        }
+        // [已优化] 状态检查和自动重启逻辑已整合到 checkStatusLightweight 和后端 monitor_scripts
         
         // 更新停止原因显示
         function updateStopReasonDisplay(scriptId, stopReason) {
@@ -2511,177 +2452,128 @@
             }
         }
         
-        // 立即更新脚本状态显示（不依赖API响应）
+        // 立即更新脚本状态显示（不依赖API响应，通过data-script-id精确查找）
         function updateScriptStatusImmediately(scriptId, status, stopReason = null) {
-            const scriptCards = document.querySelectorAll('.script-card');
-            scriptCards.forEach(card => {
-                const titleElement = card.querySelector('.script-title');
-                const cardScriptId = card.getAttribute('data-script-id') || 
-                    (titleElement ? titleElement.textContent.trim() : '');
-                
-                // 通过脚本ID或名称匹配
-                if (cardScriptId === scriptId || 
-                    (titleElement && titleElement.textContent.includes(scriptId))) {
-                    
-                    // 立即更新状态徽章
-                    const statusBadge = card.querySelector('.status-badge');
-                    if (statusBadge) {
-                        if (status === 'running') {
-                            statusBadge.className = 'status-badge status-running';
-                            statusBadge.innerHTML = '<i class="bi bi-play-circle-fill"></i> 运行中';
-                            statusBadge.style.display = 'inline-block';
-                            // 脚本运行时移除异常中断边框和闪烁效果
-                            card.classList.remove('crash-status');
-                            statusBadge.classList.remove('flash-red');
-                        } else if (status === 'stopped') {
-                            statusBadge.className = 'status-badge status-stopped';
-                            statusBadge.innerHTML = '<i class="bi bi-stop-circle"></i> 已停止';
-                            statusBadge.style.display = 'inline-block';
-                        }
-                    }
-                    
-                    // 立即更新停止原因显示
-                    if (status === 'stopped' && stopReason) {
-                        updateStopReasonDisplay(scriptId, stopReason);
-                    } else if (status === 'running') {
-                        updateStopReasonDisplay(scriptId, null);
-                    }
-                    
-                    // 立即更新按钮状态
-                    const actionsDiv = card.querySelector('.script-actions');
-                    if (actionsDiv) {
-                        const startStopButton = actionsDiv.querySelector('.btn-start, .btn-stop');
-                        if (startStopButton) {
-                            if (status === 'running') {
-                                startStopButton.className = 'btn btn-stop btn-custom';
-                                startStopButton.innerHTML = '<i class="bi bi-stop-fill"></i> 停止';
-                                startStopButton.setAttribute('onclick', `stopScript('${scriptId}')`);
-                            } else {
-                                startStopButton.className = 'btn btn-start btn-custom';
-                                startStopButton.innerHTML = '<i class="bi bi-play-fill"></i> 启动';
-                                startStopButton.setAttribute('onclick', `startScript('${scriptId}')`);
-                            }
-                        }
-                    }
-                    
-                    console.log(`⚡ 立即更新脚本 ${scriptId} 状态为: ${status}`);
+            const card = document.querySelector(`[data-script-id="${scriptId}"]`);
+            if (!card) return;
+            
+            const statusBadge = card.querySelector('.status-badge');
+            if (statusBadge) {
+                if (status === 'running') {
+                    statusBadge.className = 'status-badge status-running';
+                    statusBadge.innerHTML = '<i class="bi bi-play-circle-fill"></i> 运行中';
+                    statusBadge.style.display = 'inline-block';
+                    card.classList.remove('crash-status');
+                    statusBadge.classList.remove('flash-red');
+                } else if (status === 'stopped') {
+                    statusBadge.className = 'status-badge status-stopped';
+                    statusBadge.innerHTML = '<i class="bi bi-stop-circle"></i> 已停止';
+                    statusBadge.style.display = 'inline-block';
                 }
-            });
+            }
+            
+            if (status === 'stopped' && stopReason) {
+                updateStopReasonDisplay(scriptId, stopReason);
+            } else if (status === 'running') {
+                updateStopReasonDisplay(scriptId, null);
+            }
+            
+            const actionsDiv = card.querySelector('.script-actions');
+            if (actionsDiv) {
+                const startStopButton = actionsDiv.querySelector('.btn-start, .btn-stop');
+                if (startStopButton) {
+                    if (status === 'running') {
+                        startStopButton.className = 'btn btn-stop btn-custom';
+                        startStopButton.innerHTML = '<i class="bi bi-stop-fill"></i> 停止';
+                        startStopButton.setAttribute('onclick', `stopScript('${scriptId}')`);
+                    } else {
+                        startStopButton.className = 'btn btn-start btn-custom';
+                        startStopButton.innerHTML = '<i class="bi bi-play-fill"></i> 启动';
+                        startStopButton.setAttribute('onclick', `startScript('${scriptId}')`);
+                    }
+                }
+            }
         }
         
-        // 单独更新特定脚本的状态
+        // 单独更新特定脚本的状态（只请求单个脚本数据）
         async function updateSingleScriptStatus(scriptId) {
             try {
-                const response = await fetch('/dawson/api/scripts');
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
+                const response = await fetch(`/dawson/api/scripts/${scriptId}`);
+                if (!response.ok) return;
                 
-                const data = await response.json();
-                let scripts;
-                if (Array.isArray(data)) {
-                    scripts = data;
-                } else if (typeof data === 'object' && data !== null) {
-                    scripts = Object.keys(data).map(id => ({
-                        id: id,
-                        ...data[id]
-                    }));
-                } else {
-                    throw new Error('API返回的数据格式不正确');
-                }
+                const targetScript = await response.json();
+                targetScript.id = scriptId;
                 
-                const targetScript = scripts.find(s => s.id === scriptId);
-                if (targetScript) {
-                    // 找到对应的脚本卡片并更新状态
-                    const scriptCards = document.querySelectorAll('.script-card');
-                    scriptCards.forEach(card => {
-                        const titleElement = card.querySelector('.script-title');
-                        if (titleElement && titleElement.textContent === targetScript.name) {
-                            // 更新状态徽章
-                            const statusBadge = card.querySelector('.status-badge');
-                            if (statusBadge) {
-                                const statusText = getStatusText(targetScript);
-                                if (statusText) {
-                                    const baseClassName = `status-badge status-${getStatusClass(targetScript)}`;
-                                    // 如果脚本已停止且有停止原因，保持闪烁效果
-                                    if (targetScript.status === 'stopped' && targetScript.stop_reason) {
-                                        statusBadge.className = `${baseClassName} flash-red`;
-                                    } else {
-                                        statusBadge.className = baseClassName;
-                                    }
-                                    statusBadge.innerHTML = `<i class="bi bi-${getStatusIcon(targetScript)}"></i> ${statusText}`;
-                                    statusBadge.style.display = 'inline-block';
-                                } else {
-                                    statusBadge.style.display = 'none';
-                                }
-                            }
-                            
-                            // 更新按钮
-                            const actionsDiv = card.querySelector('.script-actions');
-                            if (actionsDiv) {
-                                const startStopButton = actionsDiv.querySelector('.btn-start, .btn-stop');
-                                if (startStopButton) {
-                                    if (targetScript.status === 'running') {
-                                        startStopButton.className = 'btn btn-stop btn-custom';
-                                        startStopButton.innerHTML = '<i class="bi bi-stop-fill"></i> 停止';
-                                        startStopButton.setAttribute('onclick', `stopScript('${targetScript.id}')`);
-                                    } else {
-                                        startStopButton.className = 'btn btn-start btn-custom';
-                                        startStopButton.innerHTML = '<i class="bi bi-play-fill"></i> 启动';
-                                        startStopButton.setAttribute('onclick', `startScript('${targetScript.id}')`);
-                                    }
-                                }
-                            }
-                            
-                            // 处理停止原因显示
-                            if (targetScript.status === 'running') {
-                                // 脚本正在运行时，清除停止原因显示
-                                updateStopReasonDisplay(targetScript.id, null);
-                            } else if (targetScript.status === 'stopped' && targetScript.stop_reason) {
-                                // 脚本已停止且有停止原因时，显示停止原因
-                                updateStopReasonDisplay(targetScript.id, targetScript.stop_reason);
-                            }
-                            
-                            // 处理CMD输出容器
-                            const existingCmdOutput = card.querySelector(`#cmd-output-${targetScript.id}`);
-                            if (targetScript.status === 'running') {
-                                
-                                // 如果脚本正在运行但没有CMD输出容器，则创建一个
-                                if (!existingCmdOutput) {
-                                    const cmdOutputHtml = `
-                                        <div class="cmd-output-container" id="cmd-output-${targetScript.id}">
-                                            <div class="cmd-output-header">
-                                                <span class="cmd-output-title">
-                                                    <i class="bi bi-terminal"></i> 实时输出
-                                                </span>
-                                                <button class="btn btn-sm btn-outline-light" onclick="toggleCmdOutput('${targetScript.id}')" id="toggle-cmd-${targetScript.id}">
-                                                    <i class="bi bi-chevron-up"></i>
-                                                </button>
-                                            </div>
-                                            <div class="cmd-output-content" id="cmd-content-${targetScript.id}">
-                                                <div class="loading-output">正在加载输出...</div>
-                                            </div>
-                                        </div>
-                                    `;
-                                    // 在script-actions之前插入CMD输出容器
-                                    actionsDiv.insertAdjacentHTML('beforebegin', cmdOutputHtml);
-                                    // 立即更新CMD输出
-                                    setTimeout(() => updateCmdOutput(targetScript.id), 100);
-                                }
-                            } else {
-                                // 脚本已停止，但保留CMD输出容器（永不删除）
-                                // CMD输出容器将继续显示最后的输出内容
-                            }
+                const card = document.querySelector(`[data-script-id="${scriptId}"]`);
+                if (!card) return;
+                
+                // 更新状态徽章
+                const statusBadge = card.querySelector('.status-badge');
+                if (statusBadge) {
+                    const statusText = getStatusText(targetScript);
+                    if (statusText) {
+                        let className = `status-badge status-${getStatusClass(targetScript)}`;
+                        if (targetScript.status === 'stopped' && targetScript.stop_reason === 'crash') {
+                            className += ' flash-red';
                         }
-                    });
-                    
-                    // 更新统计信息
-                    updateStats(scripts);
+                        statusBadge.className = className;
+                        statusBadge.innerHTML = `<i class="bi bi-${getStatusIcon(targetScript)}"></i> ${statusText}`;
+                        statusBadge.style.display = 'inline-block';
+                    } else {
+                        statusBadge.style.display = 'none';
+                    }
+                }
+                
+                // 更新按钮
+                const actionsDiv = card.querySelector('.script-actions');
+                if (actionsDiv) {
+                    const startStopButton = actionsDiv.querySelector('.btn-start, .btn-stop');
+                    if (startStopButton) {
+                        if (targetScript.status === 'running') {
+                            startStopButton.className = 'btn btn-stop btn-custom';
+                            startStopButton.innerHTML = '<i class="bi bi-stop-fill"></i> 停止';
+                            startStopButton.setAttribute('onclick', `stopScript('${scriptId}')`);
+                        } else {
+                            startStopButton.className = 'btn btn-start btn-custom';
+                            startStopButton.innerHTML = '<i class="bi bi-play-fill"></i> 启动';
+                            startStopButton.setAttribute('onclick', `startScript('${scriptId}')`);
+                        }
+                    }
+                }
+                
+                // 处理停止原因显示
+                if (targetScript.status === 'running') {
+                    updateStopReasonDisplay(scriptId, null);
+                    card.classList.remove('crash-status');
+                } else if (targetScript.stop_reason) {
+                    updateStopReasonDisplay(scriptId, targetScript.stop_reason);
+                }
+                
+                // 处理CMD输出容器
+                const existingCmdOutput = card.querySelector(`#cmd-output-${scriptId}`);
+                if (targetScript.status === 'running' && !existingCmdOutput) {
+                    const cmdOutputHtml = `
+                        <div class="cmd-output-container" id="cmd-output-${scriptId}">
+                            <div class="cmd-output-header">
+                                <span class="cmd-output-title"><i class="bi bi-terminal"></i> 实时输出</span>
+                                <button class="btn btn-sm btn-outline-light" onclick="toggleCmdOutput('${scriptId}')" id="toggle-cmd-${scriptId}">
+                                    <i class="bi bi-chevron-up"></i>
+                                </button>
+                            </div>
+                            <div class="cmd-output-content" id="cmd-content-${scriptId}">
+                                <div class="loading-output">正在加载输出...</div>
+                            </div>
+                        </div>
+                    `;
+                    if (actionsDiv) {
+                        actionsDiv.insertAdjacentHTML('beforebegin', cmdOutputHtml);
+                        setTimeout(() => updateCmdOutput(scriptId), 100);
+                    }
+                } else if (targetScript.status !== 'running' && existingCmdOutput && targetScript.stop_reason === 'manual') {
+                    existingCmdOutput.remove();
                 }
             } catch (error) {
                 console.error('更新脚本状态失败:', error);
-                // 如果单独更新失败，回退到全局刷新
-                loadScripts();
             }
         }
 
@@ -2927,11 +2819,11 @@
             
             container.innerHTML = html;
             
-            // 渲染完成后处理停止原因显示
+            // 渲染完成后用已有数据直接更新停止原因显示（无需额外API请求）
             setTimeout(() => {
                 scripts.forEach(script => {
-                    if (script.status === 'stopped') {
-                        checkStopReasonAndHandle(script);
+                    if (script.status === 'stopped' && script.stop_reason) {
+                        updateStopReasonDisplay(script.id, script.stop_reason);
                     }
                 });
                 
